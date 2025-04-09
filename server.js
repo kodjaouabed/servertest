@@ -17,10 +17,10 @@ app.use(bodyParser.urlencoded({extended:true}))
 const cloudinary = require('cloudinary').v2;
 
 const db=mysql.createConnection({
-    host:"localhost",
-    user:"root",
-    password:"",
-    database:"testapp"
+    host:"bp8jzr5xwnrarsdyqnz8-mysql.services.clever-cloud.com",
+    user:"uhqktstsmn4uvhed",
+    password:"TIYvWz2xys8qL4WVGEUs",
+    database:"bp8jzr5xwnrarsdyqnz8"
 })
 
 cloudinary.config({
