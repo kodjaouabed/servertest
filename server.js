@@ -178,6 +178,22 @@ app.post('/productview',(req,res)=>{
 })
 
 
+app.post('/productsingle',(req,res)=>{
+   const categorie=req.body.categorie
+   const sql="SELECT*FROM products WHERE categorie=?"
+
+   db.query(sql,[categorie],(err,data)=>{
+       if (err) {
+        console.log(err)
+       } else {
+        res.send(data)
+       }
+    }) 
+   
+  
+})
+
+
 
 app.post('/productsimilar',(req,res)=>{
    const categorie=req.body.categorie
