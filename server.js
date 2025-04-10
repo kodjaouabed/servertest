@@ -1,403 +1,204 @@
-const express=require("express")
-const cors=require("cors")
-const mysql=require("mysql")
-const bodyParser = require("body-parser")
-const bcryptjs=require("bcryptjs")
-const validator=require('validator')
-const multer=require("multer")
+const express = require("express");
+const cors = require("cors");
+const mysql = require("mysql");
+const bodyParser = require("body-parser");
+const bcryptjs = require("bcryptjs");
+const validator = require("validator");
+const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
 
+const app = express();
 
-const app=express()
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(cors())
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended:true}))
-
-
-const cloudinary = require('cloudinary').v2;
-
-const db=mysql.createConnection({
-    host:"bp8jzr5xwnrarsdyqnz8-mysql.services.clever-cloud.com",
-    user:"uhqktstsmn4uvhed",
-    password:"TIYvWz2xys8qL4WVGEUs",
-    database:"bp8jzr5xwnrarsdyqnz8"
-})
-
+// Configurer Cloudinary
 cloudinary.config({
-   cloud_name: 'dtldeglnc',
-   api_key: '298111192278727',
-   api_secret: 'L-SuTGBlPf8rJ832b_Yc8NIgbu4',
- });
+  cloud_name: 'dtldeglnc',
+  api_key: '298111192278727',
+  api_secret: 'L-SuTGBlPf8rJ832b_Yc8NIgbu4',
+});
 
- const storage = multer.memoryStorage()
- 
- const upload = multer({ storage });
+// Configuration de la base de données
+const db = mysql.createConnection({
+  host: "bp8jzr5xwnrarsdyqnz8-mysql.services.clever-cloud.com",
+  user: "uhqktstsmn4uvhed",
+  password: "TIYvWz2xys8qL4WVGEUs",
+  database: "bp8jzr5xwnrarsdyqnz8",
+});
 
+// Configurer multer pour le stockage en mémoire
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
+// Connexion à la base de données
+db.connect((err) => {
+  if (err) {
+    console.error("Erreur de connexion à la base de données: ", err);
+  } else {
+    console.log("Connexion à la base de données réussie !");
+  }
+});
 
- app.post("/upload",upload.single("file"),(req,res)=>{
- 
-   const uploadcloudinary=cloudinary.uploader.upload_stream(
-      {folder:"imagestest"},
-      (err,result)=>{
-          if (err) {
-              console.log(err)
-          } else {
-            const sql="UPDATE user SET photo=? WHERE id=?"
-            db.query(sql,[result.secure_url,req.body.id],(err,data)=>{
-               if (err) {
-                console.log(err)
-               } else {
-                  res.send("recorded image")
-               }
-            }) 
-          }
+// Fonction d'exécution de requêtes MySQL
+const executeQuery = async (query, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.query(query, params, (err, results) => {
+      if (err) {
+        return reject(err);
       }
-  )
-  uploadcloudinary.end(req.file.buffer);
- })
-
-
-
-app.get('/',(req,res)=>{
-      res.send('bienvenu')
-})
-
-
-app.post('/sigin',(req,res)=>{
-    const identifiant=req.body.identifiant
-    const password=req.body.password
-
-
-    const sql="SELECT*FROM user WHERE identifiant=?"
-
-    db.query(sql,[identifiant],(err,data)=>{
-        if (err) {
-           res.send("registration error")
-        } else {
-         if (data.length>0) {
-            res.send("existing user")
-         }else{
-            bcryptjs.hash(password,10,(err,passwordhash)=>{
-                if (err) {
-                    res.send("registration error")
-                } else {
-                    if (validator.isEmail(identifiant)) {
-                     const sql="INSERT INTO user (identifiant,password,email) VALUES (?,?,?)"
-                     db.query(sql,[identifiant,passwordhash,identifiant],(err,data)=>{
-                       if (err) {
-                          res.send("registration error")
-                       } else {
-                          res.send("successful registration")
-                       }
-                    })
-                    } else {
-                     const sql="INSERT INTO user (identifiant,password) VALUES (?,?)"
-                     db.query(sql,[identifiant,passwordhash],(err,data)=>{
-                       if (err) {
-                          res.send("registration error")
-                       } else {
-                          res.send("successful registration")
-                       }
-                    })
-                    } 
-                }
-            })
-         }
-        }
-     }) 
-    
-   
-})
-
-
-app.post('/login',(req,res)=>{
-    const identifiant=req.body.identifiant
-    const password=req.body.password
-    
-    const sql="SELECT*FROM user WHERE identifiant=?"
-            db.query(sql,[identifiant],(err,data)=>{
-               if (err) {
-                  res.send("registration error")
-               } else {
-                  //res.send("successful registration")
-                  if (data.length>0) {
-                    bcryptjs.compare(password,data[0].password,(err,result)=>{
-                         if (err) {
-                            res.send("incorrect username or password")
-                         } else {
-                            if (result===true) {
-                               res.send("connection successful")
-                            } else {
-                                res.send("incorrect username or password")
-                            }
-                         }
-                    })
-                  } else {
-                    res.send("incorrect username or password")
-                  }
-               }
-          
-    })
-})
-
-
-
-
-
-app.get('/products',(req,res)=>{
-
-    const sql="SELECT*FROM products"
-
-    db.query(sql,[],(err,data)=>{
-        if (err) {
-         console.log(err)
-        } else {
-         res.send(data)
-        }
-     }) 
-    
-   
-})
-
-
-
-app.post('/productview',(req,res)=>{
-    const id=req.body.id
-    const sql="SELECT*FROM products WHERE id=?"
-
-    db.query(sql,[id],(err,data)=>{
-        if (err) {
-         console.log(err)
-        } else {
-         res.send(data)
-        }
-     }) 
-    
-   
-})
-
-
-
-app.post('/productsimilar',(req,res)=>{
-   const categorie=req.body.categorie
-   const id=req.body.id
-   const sql="SELECT*FROM products WHERE categorie=? AND id!=?"
-
-   db.query(sql,[categorie,id],(err,data)=>{
-       if (err) {
-        console.log(err)
-       } else {
-        res.send(data)
-       }
-    }) 
-   
-  
-})
-
-
-
-
-app.post('/productsearch',(req,res)=>{
-   const name=req.body.name
-   const sql="SELECT*FROM products WHERE nameProduct LIKE ? "
-
-   db.query(sql,[`%${name}%`],(err,data)=>{
-       if (err) {
-        console.log(err)
-       } else {
-        res.send(data)
-       }
-    }) 
-   
-  
-})
-
-
-
-
-app.post('/userprofile',(req,res)=>{
-   const identifiant=req.body.identifiant
-   
-   const sql="SELECT*FROM user WHERE identifiant=?"
-           db.query(sql,[identifiant],(err,data)=>{
-              if (err) {
-                 console.log(err)
-              } else {
-                 res.send(data)
-              }
-         
-   })
-})
-
-
-app.post('/changepassword',(req,res)=>{
-   const id=req.body.id
-   const password=req.body.password
-   const passwordverify=req.body.passwordverify
-   
-   const sql="SELECT*FROM user WHERE id=?"
-           db.query(sql,[id],(err,data)=>{
-              if (err) {
-                 console.log(err)
-              } else {
-               bcryptjs.compare(passwordverify,data[0].password,(err,result)=>{
-                  if (err) {
-                     res.send("incorrect password")
-                  } else {
-                     if (result===true) {
-                        bcryptjs.hash(password,10,(err,passwordhash)=>{
-                           if (err) {
-                              res.send("incorrect password")
-                           } else {
-                              const sql="UPDATE user SET password=? WHERE id=?"
-                              db.query(sql,[passwordhash,id],(err,data)=>{
-                                 if (err) {
-                                    console.log(err)
-                                 } else {
-                                    res.send("successful updte password")
-                                 }
-                            
-                      })
-                           }
-                        })
-                        
-                     } else {
-                         res.send("incorrect password")
-                     }
-                  }
-             })
-              }
-         
-   })
-})
-
-
-
-
-
-
-
-
-
-
-app.post('/save',(req,res)=>{
- const  {id,passwordverify,email,pincode,address,city,country,state,banckaccountnumber,banckaccountname,ifsc}=req.body
-   
-
-   const sql="SELECT*FROM user WHERE id=?"
-   db.query(sql,[id],(err,data)=>{
-      bcryptjs.compare(passwordverify,data[0].password,(err,result)=>{
-            if (err) {
-               console.log(err)
-            } else {
-               if (result===true) {
-               const sql="UPDATE user SET email=?,pincode=?,address=?,city=?,state=?,country=?,banckaccountnumber=?,banckaccountname=?,ifsccode=?  WHERE id=?"
-               db.query(sql,[email===""?data[0].email:email,pincode===""?data[0].pincode:pincode,address===""?data[0].address:address,city===""?data[0].city:city,state===""?data[0].state:state,country===""?data[0].country:country,banckaccountnumber===""?data[0].banckaccountnumber:banckaccountnumber,banckaccountname===""?data[0].banckaccountname:banckaccountname,ifsc===""?data[0].ifsccode:ifsc,id],(err,data)=>{
-               if (err) {
-                  console.log(err)
-               } else {
-                  res.send("successful updte")
-               }     
-               })  
-               } else {
-                  res.send("incorrect password")
-               }
-            }
-      })
-   })
-})
-
-
-app.post('/buynowcommande',(req,res)=>{
-   const id=req.body.id
-   const qte=req.body.qte
-   const size=req.body.size
-   const iduser=req.body.iduser
-   const name=req.body.name
-   const total=req.body.total
-   const products=[{id,id,name:name,size:size,quantity:qte,iduser:iduser}]
-   const sql="SELECT*FROM products WHERE id=?"
-
-   db.query(sql,[id],(err,data)=>{
-       if (err) {
-        console.log(err)
-       } else {
-       const quantity=data[0].quantity-qte
-       const sql='UPDATE products SET quantity=? WHERE id=?'
-       db.query(sql,[quantity,id],(err,data)=>{
-            if (err) {
-               console.log(err)
-            } else {
-               const date=new Date()
-               const sql="INSERT INTO commande (products,date,iduser,total) VALUES (?,?,?,?)"
-               db.query(sql,[JSON.stringify(products),date.toISOString(),iduser,total],(err,data)=>{
-                     if (err) {
-                       console.log(err)
-                     } else {
-                       res.send("order validated")
-                     }
-               })
-            }
-       })
-       }
-    }) 
-})
-
-
-
-
-
-
-app.post('/commande',(req,res)=>{
-   const cart=req.body.cart
-   const iduser=req.body.user
-   const total=req.body.total
-
-   cart.map((product,key)=>{
-        const sql="SELECT*FROM products WHERE id=?"
-        db.query(sql,[product.id],(err,data)=>{
-             if (err) {
-               console.log(err)
-             } else {
-            const quantity=data[0].quantity-product.quantity
-            
-            const sql='UPDATE products SET quantity=? WHERE id=?'
-            db.query(sql,[quantity,product.id],(err,data)=>{
-             if (err) {
-               console.log(err)
-             } else {
-               
-             }
-        })
-
-             }
-        })
-   })
-   
-
-      const date=new Date()
-      const sql="INSERT INTO commande (products,date,iduser,total) VALUES (?,?,?,?)"
-      db.query(sql,[JSON.stringify(cart),date.toISOString(),iduser,total],(err,data)=>{
-            if (err) {
-              console.log(err)
-            } else {
-              res.send("order validated")
-            }
-      })
-
-})
-
-
-
-
-
-
-
-app.listen(3001,(err)=>{
-    if (err) {
-        console.log('erreur')  
-    } else {
-        console.log('application lancer sur le port 3001') 
+      resolve(results);
+    });
+  });
+};
+
+// Route d'accueil
+app.get("/", (req, res) => {
+  res.send("Bienvenu !");
+});
+
+// Route d'inscription
+app.post("/signin", async (req, res) => {
+  const { identifiant, password } = req.body;
+  try {
+    const users = await executeQuery("SELECT * FROM user WHERE identifiant = ?", [identifiant]);
+    if (users.length > 0) {
+      return res.send("Utilisateur existant");
     }
-})
+
+    const passwordHash = await bcryptjs.hash(password, 10);
+
+    if (validator.isEmail(identifiant)) {
+      await executeQuery("INSERT INTO user (identifiant, password, email) VALUES (?, ?, ?)", [identifiant, passwordHash, identifiant]);
+    } else {
+      await executeQuery("INSERT INTO user (identifiant, password) VALUES (?, ?)", [identifiant, passwordHash]);
+    }
+
+    res.send("Inscription réussie");
+  } catch (err) {
+    console.error("Erreur d'inscription:", err);
+    res.status(500).send("Erreur d'inscription");
+  }
+});
+
+// Route de connexion
+app.post("/login", async (req, res) => {
+  const { identifiant, password } = req.body;
+  try {
+    const users = await executeQuery("SELECT * FROM user WHERE identifiant = ?", [identifiant]);
+    if (users.length === 0) {
+      return res.send("Identifiant ou mot de passe incorrect");
+    }
+
+    const isMatch = await bcryptjs.compare(password, users[0].password);
+    if (isMatch) {
+      res.send("Connexion réussie");
+    } else {
+      res.send("Identifiant ou mot de passe incorrect");
+    }
+  } catch (err) {
+    console.error("Erreur de connexion:", err);
+    res.status(500).send("Erreur de connexion");
+  }
+});
+
+// Route de mise à jour de la photo de profil
+app.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: "imagestest" },
+        (err, result) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+
+    await executeQuery("UPDATE user SET photo = ? WHERE id = ?", [result.secure_url, req.body.id]);
+    res.send("Image enregistrée");
+  } catch (err) {
+    console.error("Erreur de téléchargement:", err);
+    res.status(500).send("Erreur de téléchargement");
+  }
+});
+
+// Route pour obtenir les produits
+app.get("/products", async (req, res) => {
+  try {
+    const products = await executeQuery("SELECT * FROM products");
+    res.send(products);
+  } catch (err) {
+    console.error("Erreur lors de la récupération des produits:", err);
+    res.status(500).send("Erreur lors de la récupération des produits");
+  }
+});
+
+// Route pour voir un produit spécifique
+app.post("/productview", async (req, res) => {
+  const { id } = req.body;
+  try {
+    const product = await executeQuery("SELECT * FROM products WHERE id = ?", [id]);
+    res.send(product);
+  } catch (err) {
+    console.error("Erreur lors de la vue produit:", err);
+    res.status(500).send("Erreur lors de la vue produit");
+  }
+});
+
+// Route pour la recherche de produits
+app.post("/productsearch", async (req, res) => {
+  const { name } = req.body;
+  try {
+    const products = await executeQuery("SELECT * FROM products WHERE nameProduct LIKE ?", [`%${name}%`]);
+    res.send(products);
+  } catch (err) {
+    console.error("Erreur lors de la recherche de produits:", err);
+    res.status(500).send("Erreur lors de la recherche de produits");
+  }
+});
+
+// Route pour obtenir le profil d'un utilisateur
+app.post("/userprofile", async (req, res) => {
+  const { identifiant } = req.body;
+  try {
+    const user = await executeQuery("SELECT * FROM user WHERE identifiant = ?", [identifiant]);
+    res.send(user);
+  } catch (err) {
+    console.error("Erreur lors de la récupération du profil utilisateur:", err);
+    res.status(500).send("Erreur lors de la récupération du profil utilisateur");
+  }
+});
+
+// Route pour changer le mot de passe
+app.post("/changepassword", async (req, res) => {
+  const { id, password, passwordverify } = req.body;
+  try {
+    const user = await executeQuery("SELECT * FROM user WHERE id = ?", [id]);
+    const isMatch = await bcryptjs.compare(passwordverify, user[0].password);
+
+    if (isMatch) {
+      const newPasswordHash = await bcryptjs.hash(password, 10);
+      await executeQuery("UPDATE user SET password = ? WHERE id = ?", [newPasswordHash, id]);
+      res.send("Mot de passe mis à jour avec succès");
+    } else {
+      res.send("Mot de passe incorrect");
+    }
+  } catch (err) {
+    console.error("Erreur de mise à jour du mot de passe:", err);
+    res.status(500).send("Erreur de mise à jour du mot de passe");
+  }
+});
+
+// Lancer le serveur
+app.listen(3001, (err) => {
+  if (err) {
+    console.log("Erreur lors du démarrage de l'application");
+  } else {
+    console.log("Application lancée sur le port 3001");
+  }
+});
