@@ -1,7 +1,6 @@
 const express=require("express")
 const cors=require("cors")
 const mysql=require("mysql")
-const bodyParser = require("body-parser")
 const bcryptjs=require("bcryptjs")
 const validator=require('validator')
 const multer=require("multer")
@@ -9,9 +8,10 @@ const multer=require("multer")
 
 const app=express()
 
-app.use(cors())
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended:true}))
+app.use(cors()); // CORS pour les requêtes entre serveurs
+app.use(express.json()); // Pour traiter les JSON (sans body-parser)
+app.use(express.urlencoded({ extended: true })); // Pour traiter les URL-encoded
+
 
 
 const cloudinary = require('cloudinary').v2;
