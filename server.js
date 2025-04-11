@@ -4,7 +4,6 @@ const mysql=require("mysql")
 const bcryptjs=require("bcryptjs")
 const validator=require('validator')
 const multer=require("multer")
-const rateLimit = require('express-rate-limit');
 
 
 const app=express()
@@ -15,13 +14,8 @@ app.use(express.urlencoded({ extended: true })); // Pour traiter les URL-encoded
 
 
 
-const limiter = rateLimit({
-   windowMs: 1 * 60 * 1000, // 1 minute
-   max: 5, // Limite chaque IP à 5 requêtes par fenêtre
-   message: "Trop de requêtes envoyées. Essayez à nouveau plus tard."
- });
 
-app.use("/productsingle", limiter);
+
 
 const cloudinary = require('cloudinary').v2;
 
