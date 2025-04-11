@@ -7,6 +7,7 @@ const multer=require("multer")
 
 
 const app=express()
+app.set('trust proxy', 1); 
 
 app.use(cors()); // CORS pour les requêtes entre serveurs
 app.use(express.json()); // Pour traiter les JSON (sans body-parser)
