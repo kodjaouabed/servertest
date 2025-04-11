@@ -20,8 +20,7 @@ app.use(express.urlencoded({ extended: true })); // Pour traiter les URL-encoded
 
 const cloudinary = require('cloudinary').v2;
 
-const db=mysql.createPool({
-    connectionLimit:3,
+const db=mysql.createConnection({
     host:"bp8jzr5xwnrarsdyqnz8-mysql.services.clever-cloud.com",
     user:"uhqktstsmn4uvhed",
     password:"TIYvWz2xys8qL4WVGEUs",
