@@ -166,7 +166,7 @@ app.get('/products',(req,res)=>{
 
 
 
-app.post('/productview',(req,res)=>{
+/*app.post('/productview',(req,res)=>{
     const id=req.body.id
     const sql="SELECT*FROM products WHERE id=?"
 
@@ -231,7 +231,7 @@ app.post('/productsearch',(req,res)=>{
     }) 
    
   
-})
+})*/
 
 
 
@@ -329,7 +329,7 @@ app.post('/save',(req,res)=>{
 })
 
 
-app.post('/buynowcommande',(req,res)=>{
+/*app.post('/buynowcommande',(req,res)=>{
    const id=req.body.id
    const qte=req.body.qte
    const size=req.body.size
@@ -364,7 +364,7 @@ app.post('/buynowcommande',(req,res)=>{
     }) 
 })
 
-
+*/
 
 
 
